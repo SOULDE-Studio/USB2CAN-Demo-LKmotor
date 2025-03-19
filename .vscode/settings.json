@@ -1,0 +1,7 @@
+{
+    "ros.distro": "noetic",
+    "files.associations": {
+        "thread": "cpp",
+        "chrono": "cpp"
+    }
+}
