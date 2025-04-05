@@ -22,9 +22,8 @@
 float uint_to_float(int x_int, float x_min, float x_max, int bits);
 int float_to_uint(float x, float x_min, float x_max, int bits);
 
-// LK MG电机
-#define P_ENCOD_PARA 16   // 编码器参数
-#define V_ROIT (9.55f * 6.0f) // dps转rad/s
+// LK MG电机 
+#define V_ROIT (9.55f * 6.0f *8.0f) // dps转rad/s,再乘以减速比，MG6012-i8v3减速比为8
 #define IQ_MIN -66.0f      // 最小电流
 #define IQ_MAX 66.0f       // 最大电流
 
@@ -34,7 +33,7 @@ int float_to_uint(float x, float x_min, float x_max, int bits);
 
 typedef struct
 {
-	uint8_t id;
+	uint32_t id;
 
 	float position;
 	float speed;
@@ -44,21 +43,21 @@ typedef struct
 
 	//发送的电流
 	float send_iq_f;
-	uint16_t send_iq;
+	int16_t send_iq;
 
 
 } Motor_CAN_Send_Struct;
 
 typedef struct
 {
-	uint8_t motor_id;
+	uint32_t motor_id;
 	uint8_t motor_status;
 
 
 	uint16_t current_position; //编码器值 encoder（uint16_t 类型，14bit 编码器的数值范围 0~16383，15bit 编码器的数值范围0~32767，16bit 编码器的数值范围 0~65535）
-	uint16_t current_speed;	   //电机转速 speed（int16_t 类型，1dps/LSB）
-	uint16_t current_iq;       //MG 电机 iq 分辨率为(66/4096 A) / LSB
-	uint16_t current_temp;	   //电机温度 temperature（int8_t 类型，1℃/LSB）
+	int16_t current_speed;	   //电机转速 speed（int16_t 类型，1dps/LSB）
+	int16_t current_iq;       //MG 电机 iq 分辨率为(66/4096 A) / LSB
+	int8_t current_temp;	   //电机温度 temperature（int8_t 类型，1℃/LSB）
 
 	float current_position_f; 
 	float current_speed_f;	  
@@ -158,7 +157,6 @@ public:
 
     void Motor_Read_State(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data);
 
-
 	void Motor_Enable(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data);
 
 	void Motor_Disable(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data);
@@ -167,7 +165,7 @@ public:
 
     void CAN_Send_Control(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data_Send,Motor_CAN_Recieve_Struct *Motor_Data_state) ;
 
-	void Motor_Passive_SET(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data);
+
 
 	
     void READ_ALL_STATE(int delay_us);
@@ -177,8 +175,6 @@ public:
 	void DISABLE_ALL_MOTOR(int delay_us);
 
 	void ZERO_ALL_MOTOR(int delay_us);
-
-	void PASSIVE_ALL_MOTOR(int delay_us);
 
 	void CAN_TX_ALL_MOTOR(int delay_us);
 

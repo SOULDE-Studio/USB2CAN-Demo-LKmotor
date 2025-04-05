@@ -19,6 +19,10 @@ sudo cp usb_can.rules /etc/udev/rules.d/
 sudo udevadm trigger
 ```
 
+>瓴控电机``` 千万不要设置成``` CAN广播控制模式。
+
+
+
 ```USB转2路CAN模块购买地址：```
 https://e.tb.cn/h.TBC18sl6EZKXUjL?tk=C5g5eLgyMf6HU071
 

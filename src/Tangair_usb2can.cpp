@@ -81,8 +81,7 @@ Tangair_usb2can::~Tangair_usb2can()
     //键盘改速度
     _keyborad_input.join();
 
-    // 失能电机
-    DISABLE_ALL_MOTOR(100);
+   
 
     // 关闭设备
     closeUSBCAN(USB2CAN0_);
@@ -118,21 +117,23 @@ void Tangair_usb2can::CAN_RX_device_0_thread()
             can_dev0_rx_count++;
             // 解码
            
-            CAN_DEV0_RX.motor_id = info_rx.canID - 0x180;
+            CAN_DEV0_RX.motor_id = info_rx.canID -0x140;
             CAN_DEV0_RX.motor_status=data_rx[0];
 
-            if(CAN_DEV0_RX.motor_status==0x9C)//只有符合协议的电机数据才进行解析
+           
+
+
+            if((CAN_DEV0_RX.motor_status==0x9C)||(CAN_DEV0_RX.motor_status==0xA1))//只有符合协议的电机数据才进行解析
             {
                 CAN_DEV0_RX.current_temp=data_rx[1];
                 CAN_DEV0_RX.current_iq= data_rx[2]|(data_rx[3]<<8);
                 CAN_DEV0_RX.current_speed= data_rx[4]|(data_rx[5]<<8);
                 CAN_DEV0_RX.current_position= data_rx[6]|(data_rx[7]<<8);
 
-        
                 // 转换
-                CAN_DEV0_RX.current_position_f = uint_to_float(CAN_DEV0_RX.current_position, (-PI), ( PI), P_ENCOD_PARA);//rad
+                CAN_DEV0_RX.current_position_f = float(CAN_DEV0_RX.current_position)/65535*2*PI; //rad
                 CAN_DEV0_RX.current_speed_f = (float)CAN_DEV0_RX.current_speed/V_ROIT;   //rad/s
-                CAN_DEV0_RX.current_iq_f = uint_to_float(CAN_DEV0_RX.current_iq, (IQ_MIN), (IQ_MAX), 12);//A
+                CAN_DEV0_RX.current_iq_f = float(CAN_DEV0_RX.current_iq)/4096*66;//A
                 CAN_DEV0_RX.current_temp_f = (float)CAN_DEV0_RX.current_temp;                 //摄氏度            
 
                 if (channel == 1) // 模块0，can1
@@ -217,10 +218,10 @@ void Tangair_usb2can::CAN_RX_device_1_thread()
         {
             can_dev1_rx_count++;
 
-            CAN_DEV1_RX.motor_id = info_rx.canID - 0x180;
+            CAN_DEV1_RX.motor_id = info_rx.canID - 0x140;
             CAN_DEV1_RX.motor_status=data_rx[0];
 
-            if(CAN_DEV1_RX.motor_status==0x9C)//只有符合协议的电机数据才进行解析
+            if(CAN_DEV1_RX.motor_status==0x9C||CAN_DEV1_RX.motor_status==0xA1)//只有符合协议的电机数据才进行解析
             {
                 CAN_DEV1_RX.current_temp=data_rx[1];
                 CAN_DEV1_RX.current_iq= data_rx[2]|(data_rx[3]<<8);
@@ -229,9 +230,9 @@ void Tangair_usb2can::CAN_RX_device_1_thread()
 
         
                 // 转换
-                CAN_DEV1_RX.current_position_f = uint_to_float(CAN_DEV1_RX.current_position, (-PI), ( PI), P_ENCOD_PARA);//rad
+                CAN_DEV1_RX.current_position_f = float(CAN_DEV1_RX.current_position)/65535*2*PI; //rad
                 CAN_DEV1_RX.current_speed_f = (float)CAN_DEV1_RX.current_speed/V_ROIT;   //rad/s
-                CAN_DEV1_RX.current_iq_f = uint_to_float(CAN_DEV1_RX.current_iq, (IQ_MIN), (IQ_MAX), 12);//A
+                CAN_DEV1_RX.current_iq_f = float(CAN_DEV1_RX.current_iq)/4096*66;//A
                 CAN_DEV1_RX.current_temp_f = (float)CAN_DEV1_RX.current_temp;                 //摄氏度     
 
                 if (channel == 1)  // 模块1，can1
@@ -382,8 +383,7 @@ void Tangair_usb2can::CAN_TX_test_thread()
         USB2CAN1_CAN_Bus_2.ID_3_motor_send.kp = 0;
         USB2CAN1_CAN_Bus_2.ID_3_motor_send.kd = 1;
     }
-    //读取电机信息
-    READ_ALL_STATE(100);
+  
     //读取电机信息
     READ_ALL_STATE(100);
    
@@ -392,7 +392,7 @@ void Tangair_usb2can::CAN_TX_test_thread()
 
     while (running_)
     {
-        //电机控制参数配置，单纯给速度，给ID为1的电机，设置键盘速度，速度单位为rad/s
+        // 电机控制参数配置，单纯给速度，给ID为1的电机，设置键盘速度，速度单位为rad/s
         if (abs((int)speed_input) < 50)
         {
             USB2CAN0_CAN_Bus_1.ID_1_motor_send.speed = (int)speed_input;
@@ -426,6 +426,8 @@ void Tangair_usb2can::CAN_TX_test_thread()
                       << "TIME=" << (tp % 1000000) / 1000 << "." << tp % 1000 << "s" << std::endl;
         }
     }
+     // 失能电机
+    DISABLE_ALL_MOTOR(100);
 
     //程序终止时的提示信息
     std::cout << "CAN_TX_test_thread  Exit~~" << std::endl;
@@ -453,7 +455,7 @@ void Tangair_usb2can::keyborad_input()
 void Tangair_usb2can::USB2CAN_CAN_Bus_inti_set(USB2CAN_CAN_Bus_Struct *CAN_Bus)
 {
     CAN_Bus->ID_1_motor_send.id = 1;
-    CAN_Bus->ID_1_motor_recieve.motor_id=1;
+    CAN_Bus->ID_1_motor_recieve.motor_id= 1;
 
     CAN_Bus->ID_2_motor_send.id = 2;
     CAN_Bus->ID_2_motor_recieve.motor_id=2;
@@ -479,7 +481,8 @@ void Tangair_usb2can::USB2CAN_CAN_Bus_Init()
 /// @param Motor_Data
 void Tangair_usb2can::Motor_Read_State(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data)
 {
-    txMsg_CAN.canID = Motor_Data->id + 0x140;
+    txMsg_CAN.canID = Motor_Data->id +0x140;
+  
    
     Data_CAN[0] = 0x9C;
     Data_CAN[1] = 0x00;
@@ -500,7 +503,7 @@ void Tangair_usb2can::Motor_Read_State(int32_t dev, uint8_t channel, Motor_CAN_S
 /// @param Motor_Data
 void Tangair_usb2can::Motor_Enable(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data)
 {
-    txMsg_CAN.canID = Motor_Data->id + 0x140;
+    txMsg_CAN.canID = Motor_Data->id +0x140;
    
     Data_CAN[0] = 0x88;
     Data_CAN[1] = 0x00;
@@ -520,7 +523,7 @@ void Tangair_usb2can::Motor_Enable(int32_t dev, uint8_t channel, Motor_CAN_Send_
 /// @param Motor_Data
 void Tangair_usb2can::Motor_Disable(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data)
 {
-    txMsg_CAN.canID = Motor_Data->id + 0x140;
+    txMsg_CAN.canID = Motor_Data->id +0x140;
    
     Data_CAN[0] = 0x80;
     Data_CAN[1] = 0x00;
@@ -540,7 +543,7 @@ void Tangair_usb2can::Motor_Disable(int32_t dev, uint8_t channel, Motor_CAN_Send
 /// @param Motor_Data
 void Tangair_usb2can::Motor_Zore(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data)
 {
-     txMsg_CAN.canID = Motor_Data->id + 0x140;
+      txMsg_CAN.canID = Motor_Data->id +0x140;
    
     Data_CAN[0] = 0x19;
     Data_CAN[1] = 0x00;
@@ -571,7 +574,7 @@ void Tangair_usb2can::CAN_Send_Control(int32_t dev, uint8_t channel, Motor_CAN_S
      //保险，确保状态和命令是给同一个电机的
     if(Motor_Data_Send->id==Motor_Data_state->motor_id)
     {
-        txMsg_Control.canID = Motor_Data_Send->id + 0x140;
+        txMsg_Control.canID = Motor_Data_Send->id +0x140;
 
         //解算电流
         Motor_Data_Send->send_iq_f = \
@@ -579,7 +582,14 @@ void Tangair_usb2can::CAN_Send_Control(int32_t dev, uint8_t channel, Motor_CAN_S
         Motor_Data_Send->kd*(Motor_Data_Send->speed   -Motor_Data_state->current_speed_f)+\
         Motor_Data_Send->torque;
 
-        Motor_Data_Send->send_iq=float_to_uint(Motor_Data_Send->send_iq_f, (-33), (33), 11);//控制值 iqControl 为 int16_t 类型，数值范围-2048~ 2048，对应 MG 电机实际转矩电流范围-33A~33A
+         Motor_Data_Send->send_iq_f*=100;
+
+
+        Motor_Data_Send->send_iq= Motor_Data_Send->send_iq_f;//控制值 iqControl 为 int16_t 类型，数值范围-2048~ 2048，对应 MG 电机实际转矩电流范围-33A~33A
+    
+        if( Motor_Data_Send->send_iq>2048) Motor_Data_Send->send_iq=2048;
+        if( Motor_Data_Send->send_iq<-2048) Motor_Data_Send->send_iq=-2048;
+
 
         Data_CAN_Control[0] = 0xA1;
         Data_CAN_Control[1] = 0x00;
@@ -592,20 +602,6 @@ void Tangair_usb2can::CAN_Send_Control(int32_t dev, uint8_t channel, Motor_CAN_S
 
         int ret = sendUSBCAN(dev, channel, &txMsg_Control, Data_CAN_Control);
     } 
-}
-
-/// @brief 电机阻尼模式
-/// @param dev
-/// @param channel
-/// @param Motor_Data
-void Tangair_usb2can::Motor_Passive_SET(int32_t dev, uint8_t channel, Motor_CAN_Send_Struct *Motor_Data)
-{
-    Motor_Data->speed = 0;
-    Motor_Data->kp = 0;
-    Motor_Data->kd = 2.0;
-    Motor_Data->torque = 0;
-
-    CAN_Send_Control(dev, channel, Motor_Data);
 }
 
 
@@ -789,50 +785,6 @@ void Tangair_usb2can::ZERO_ALL_MOTOR(int delay_us)
    
 }
 
-void Tangair_usb2can::PASSIVE_ALL_MOTOR(int delay_us)
-{
-
-    // 右前腿
-    Motor_Passive_SET(USB2CAN0_, 1, &USB2CAN0_CAN_Bus_1.ID_1_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 右后腿
-    Motor_Passive_SET(USB2CAN1_, 1, &USB2CAN1_CAN_Bus_1.ID_1_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 左前腿
-    Motor_Passive_SET(USB2CAN0_, 2, &USB2CAN0_CAN_Bus_2.ID_1_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 左后腿
-    Motor_Passive_SET(USB2CAN1_, 2, &USB2CAN1_CAN_Bus_2.ID_1_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-
-    // 右前腿
-    Motor_Passive_SET(USB2CAN0_, 1, &USB2CAN0_CAN_Bus_1.ID_2_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 右后腿
-    Motor_Passive_SET(USB2CAN1_, 1, &USB2CAN1_CAN_Bus_1.ID_2_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 左前腿
-    Motor_Passive_SET(USB2CAN0_, 2, &USB2CAN0_CAN_Bus_2.ID_2_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 左后腿
-    Motor_Passive_SET(USB2CAN1_, 2, &USB2CAN1_CAN_Bus_2.ID_2_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-
-    // 右前腿
-    Motor_Passive_SET(USB2CAN0_, 1, &USB2CAN0_CAN_Bus_1.ID_3_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 右后腿
-    Motor_Passive_SET(USB2CAN1_, 1, &USB2CAN1_CAN_Bus_1.ID_3_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 左前腿
-    Motor_Passive_SET(USB2CAN0_, 2, &USB2CAN0_CAN_Bus_2.ID_3_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-    // 左后腿
-    Motor_Passive_SET(USB2CAN1_, 2, &USB2CAN1_CAN_Bus_2.ID_3_motor_send);
-    std::this_thread::sleep_for(std::chrono::microseconds(delay_us)); // 单位us
-
- 
-}
 
 /// @brief can控制发送，12个电机的数据
 // 目前能达到1000hz的控制频率--------3000hz的总线发送频率---------同一路can的发送间隔在300us
