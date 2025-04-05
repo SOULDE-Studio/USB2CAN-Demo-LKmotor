@@ -30,7 +30,7 @@ https://e.tb.cn/h.TBC18sl6EZKXUjL?tk=C5g5eLgyMf6HU071
 https://pan.baidu.com/s/1EwYDNQ0jMKyTSvJEEcj6aw?pwd=10ob
 
 ```瓴控MG电机购买地址：```
-https://m.tb.cn/h.60i0XTuvhK5Y6oU
+https://e.tb.cn/h.6Uj2WkVy6Yx0P55?tk=bRFtey78CGxCZ028
 
 
 

@@ -22,14 +22,16 @@
 float uint_to_float(int x_int, float x_min, float x_max, int bits);
 int float_to_uint(float x, float x_min, float x_max, int bits);
 
-// LK MG电机 
-#define V_ROIT (9.55f * 6.0f *8.0f) // dps转rad/s,再乘以减速比，MG6012-i8v3减速比为8
-#define IQ_MIN -66.0f      // 最小电流
-#define IQ_MAX 66.0f       // 最大电流
-
-
-
 #define PI (3.1415926f)
+
+// LK MG电机 MG6012-i8v3减速比为8,编码器分辨率为4096,电流分辨率为66/4096
+#define V_ROIT (9.55f * 6.0f *8.0f) // dps转rad/s,再乘以减速比，MG6012-i8v3减速比为8
+#define IQ_ROIT (66.0/4096.0)     
+#define P_RIOT (2.0*PI/65535.0)      
+
+
+
+
 
 typedef struct
 {

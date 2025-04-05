@@ -114,7 +114,7 @@ void Tangair_usb2can::CAN_RX_device_0_thread()
         // 接收到数据
         if (recieve_re != -1)
         {
-            can_dev0_rx_count++;
+            // can_dev0_rx_count++;
             // 解码
            
             CAN_DEV0_RX.motor_id = info_rx.canID -0x140;
@@ -125,16 +125,19 @@ void Tangair_usb2can::CAN_RX_device_0_thread()
 
             if((CAN_DEV0_RX.motor_status==0x9C)||(CAN_DEV0_RX.motor_status==0xA1))//只有符合协议的电机数据才进行解析
             {
+                if(CAN_DEV0_RX.motor_status==0xA1) can_dev0_rx_count++;
+
+
                 CAN_DEV0_RX.current_temp=data_rx[1];
                 CAN_DEV0_RX.current_iq= data_rx[2]|(data_rx[3]<<8);
                 CAN_DEV0_RX.current_speed= data_rx[4]|(data_rx[5]<<8);
                 CAN_DEV0_RX.current_position= data_rx[6]|(data_rx[7]<<8);
 
                 // 转换
-                CAN_DEV0_RX.current_position_f = float(CAN_DEV0_RX.current_position)/65535*2*PI; //rad
+                CAN_DEV0_RX.current_position_f = (float)CAN_DEV0_RX.current_position*P_RIOT; //rad
                 CAN_DEV0_RX.current_speed_f = (float)CAN_DEV0_RX.current_speed/V_ROIT;   //rad/s
-                CAN_DEV0_RX.current_iq_f = float(CAN_DEV0_RX.current_iq)/4096*66;//A
-                CAN_DEV0_RX.current_temp_f = (float)CAN_DEV0_RX.current_temp;                 //摄氏度            
+                CAN_DEV0_RX.current_iq_f = (float)CAN_DEV0_RX.current_iq*IQ_ROIT;//A
+                CAN_DEV0_RX.current_temp_f = (float)CAN_DEV0_RX.current_temp;                 //摄氏度       
 
                 if (channel == 1) // 模块0，can1
                 {
@@ -216,13 +219,15 @@ void Tangair_usb2can::CAN_RX_device_1_thread()
         // 接收到数据
         if (recieve_re != -1)
         {
-            can_dev1_rx_count++;
+            // can_dev1_rx_count++;
 
             CAN_DEV1_RX.motor_id = info_rx.canID - 0x140;
             CAN_DEV1_RX.motor_status=data_rx[0];
 
             if(CAN_DEV1_RX.motor_status==0x9C||CAN_DEV1_RX.motor_status==0xA1)//只有符合协议的电机数据才进行解析
             {
+                 if(CAN_DEV1_RX.motor_status==0xA1) can_dev1_rx_count++;
+
                 CAN_DEV1_RX.current_temp=data_rx[1];
                 CAN_DEV1_RX.current_iq= data_rx[2]|(data_rx[3]<<8);
                 CAN_DEV1_RX.current_speed= data_rx[4]|(data_rx[5]<<8);
@@ -230,9 +235,9 @@ void Tangair_usb2can::CAN_RX_device_1_thread()
 
         
                 // 转换
-                CAN_DEV1_RX.current_position_f = float(CAN_DEV1_RX.current_position)/65535*2*PI; //rad
+                CAN_DEV1_RX.current_position_f = (float)CAN_DEV1_RX.current_position*P_RIOT; //rad
                 CAN_DEV1_RX.current_speed_f = (float)CAN_DEV1_RX.current_speed/V_ROIT;   //rad/s
-                CAN_DEV1_RX.current_iq_f = float(CAN_DEV1_RX.current_iq)/4096*66;//A
+                CAN_DEV1_RX.current_iq_f = (float)CAN_DEV1_RX.current_iq*IQ_ROIT;//A
                 CAN_DEV1_RX.current_temp_f = (float)CAN_DEV1_RX.current_temp;                 //摄氏度     
 
                 if (channel == 1)  // 模块1，can1
@@ -419,6 +424,8 @@ void Tangair_usb2can::CAN_TX_test_thread()
         {
             std::cout << std::endl
                       << "USB2CAN0_CAN1.current_speed_f=  " << USB2CAN0_CAN_Bus_1.ID_1_motor_recieve.current_speed_f << "  rad/s" << std::endl
+                      << "USB2CAN0_CAN1.current_iq_f=  " << USB2CAN0_CAN_Bus_1.ID_1_motor_recieve.current_iq_f << " A" << std::endl
+                      << "USB2CAN0_CAN1.current_position_f=  " << USB2CAN0_CAN_Bus_1.ID_1_motor_recieve.current_position_f << "  rad" << std::endl
                       << "USB2CAN0_CAN2.current_speed_f=  " << USB2CAN0_CAN_Bus_2.ID_1_motor_recieve.current_speed_f << "  rad/s" << std::endl
                       << "USB2CAN1_CAN1.current_speed_f=  " << USB2CAN1_CAN_Bus_1.ID_1_motor_recieve.current_speed_f << "  rad/s" << std::endl
                       << "USB2CAN1_CAN2.current_speed_f=  " << USB2CAN1_CAN_Bus_2.ID_1_motor_recieve.current_speed_f << "  rad/s" << std::endl;
